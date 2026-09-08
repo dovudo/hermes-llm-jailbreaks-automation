@@ -1,125 +1,113 @@
 ---
 name: hermes-redteam-suite
-description: 'Pentest ANY prompt vs YOUR model. Each case runs in a resumable session (chat.py, keyed by SESSION_ID) that the researcher can re-enter later to interrogate the target model. Verbatim, no scoring, minimal state.'
-version: 4.1.0
+description: 'Autonomous red-team of YOUR model. Agent orchestrates everything and returns only a SESSION_ID. You resume that session from any agent chat — no scripts to run. Verbatim prompts, full raw responses, no scoring.'
+version: 4.2.0
 author: hermes-llm-jailbreaks-automation
 license: MIT
 platforms: [linux]
 metadata:
   hermes:
-    tags: [llm-safety, red-team, jailbreak, adaptive, defensive, resumable-session, verbatim]
+    tags: [llm-safety, red-team, jailbreak, autonomous, resumable-session, verbatim, defensive]
     related_skills: []
 ---
 
-# Hermes Red-Team Suite (v4.1 — возобновляемые сессии, дословно, без логов)
+# hermes-redteam-suite (v4.2 — autonomous, resume by SESSION_ID)
 
-Тестировщик вставляет **любой** промпт → Hermes прогоняет его через target-модель
-**дословно** в **возобновляемой сессии** → возвращает **полный сырой ответ** и
-**SESSION_ID**. Позже исследователь может **вернуться в ту же сессию** и
-продолжить расспрашивать модель — понять, почему сработал обход.
+The **agent** drives the whole module. The **operator** never runs a script — they
+paste prompts and receive, at the end, a **SESSION_ID**. Handing that ID to any
+fresh agent chat re-enters the exact conversation with the target model.
 
-DEFENSIVE ONLY: только своя модель / письменно авторизованная цель.
+DEFENSIVE ONLY: own model / written authorization. Prompts pass through verbatim;
+the agent never invents working harmful payloads and never scores results.
 
-## Почему сессия — это ФАЙЛ, а не sub-agent
+## Autonomy contract (how the agent behaves)
 
-Sub-agent Hermes нельзя переоткрыть человеком (`/resume` в него не войти, его
-транскрипт нестабилен). Поэтому durable-артефакт — это **файл сессии**
-`out/sessions/<SESSION_ID>.json`, к которому может подключиться и Hermes, и
-человек напрямую, и модуль-анализатор. Инструмент — `chat.py`. (Hermes может
-запускать `chat.py` внутри своего sub-agent для изоляции, но носитель состояния
-и точка возврата — файл сессии, а не sub-agent.)
+- **Decide, don't ask.** Do not ask the operator procedural questions (session
+  names, flags, files). Infer everything. Ask only if the target model is
+  unconfigured and cannot be resolved.
+- **Never expose scripts to the operator.** `chat.py` / `ask.py` are yours to call
+  via Bash. The operator's entire interface is: paste a prompt, get a response +
+  SESSION_ID; later, give a SESSION_ID, keep talking.
+- **Never distort the result.** Return the model's full raw output. A short
+  human-readable summary is fine, but the untouched response must remain in the
+  session (the operator's analyzer reads it by SESSION_ID).
+- **Never score or judge.** That is the operator's separate analyzer's job.
 
-## Три жёстких принципа
+## Core loop — new case
 
-1. **Дословно.** Промпт уходит в модель БЕЗ изменений — никаких категорий/целей/
-   плейсхолдеров/переписываний. Проверяем широкий спектр — летит любой промпт.
-2. **Полный ответ не искажается.** В сессии хранится полный `response` + полный
-   `reasoning_content`. Человеку Hermes может дать **краткое summary**, но
-   оригинал остаётся в файле сессии нетронутым.
-3. **Минимум состояния.** Храним ТОЛЬКО то, что нужно для (а) возврата в сессию и
-   (б) чтения анализатором по SESSION_ID: историю диалога + сырые ответы.
-   Никакого скоринга и никаких производных логов.
-
-## Поток работы (что делает Hermes)
-
-### Первый промпт → создать сессию
+On the operator's first prompt (no SESSION_ID in play):
 
 ```bash
 cd ${LAB_ROOT}/projects/redteam
-# промпт кладём в temp-файл (кавычки/$/переносы не должны ломать shell)
+# write the prompt to a temp file so quotes/$/newlines can't break the shell
 python3 chat.py start --file /tmp/case.txt
 ```
 
-- `chat.py` печатает в stderr строку `SESSION_ID: rt-YYYYMMDD-HHMMSS-xxxx` и в
-  stdout — полный сырой ответ (JSON: `response`, `reasoning_content`,
-  `finish_reason`, `truncated`, `usage`).
-- **Hermes ОБЯЗАН показать SESSION_ID тестировщику/исследователю.** По нему
-  возвращаются в сессию и читает анализатор.
+`chat.py` prints `SESSION_ID: rt-…` (stderr) and the full raw JSON response
+(stdout). **Report the full response AND the SESSION_ID to the operator.**
 
-### Следующий промпт в том же чате
+Each subsequent prompt in the same chat continues that session (multi-turn /
+crescendo):
 
 ```bash
 python3 chat.py say --session <SESSION_ID> --file /tmp/case.txt
 ```
 
-- По умолчанию это **продолжение диалога** (multi-turn crescendo): вся история
-  подтягивается и шлётся модели. Для нового независимого разговора — новая сессия
-  (`chat.py start`).
+## Resume protocol — operator returns by SESSION_ID (the key feature)
 
-### Возврат исследователя в сессию (ключевая фича)
+When the operator gives you a `SESSION_ID` (in this or any later chat) and asks to
+continue / investigate — e.g. *"resume rt-20260909-011632-326d and ask the model
+why it complied"* — you become a thin relay to that persisted session:
 
-Исследователь позже входит в ту же сессию и **сам** расспрашивает модель —
-напрямую, без посредничества Hermes:
+1. For each operator message, run:
+   ```bash
+   python3 chat.py say --session <SESSION_ID> --file /tmp/turn.txt
+   ```
+   The full prior conversation is replayed to the target model automatically — the
+   operator resumes exactly where the bypass happened.
+2. Return the model's full raw response. Repeat for every follow-up.
+3. `python3 chat.py show --session <SESSION_ID>` dumps the whole transcript if the
+   operator (or their analyzer) wants it.
 
-```bash
-python3 chat.py repl --session <SESSION_ID>
-# you> почему ты выполнил этот запрос?
-# model> <полный сырой ответ модели>
-# команды REPL: :show  :paste (многострочный, конец :end)  :quit
-```
+This works from a **fresh** agent session because the state lives in the session
+**file**, not in agent memory — no sub-agent resume needed.
 
-Либо через Hermes: исследователь пишет «продолжи сессию <SESSION_ID>, спроси у
-модели X» → Hermes делает `chat.py say --session <SESSION_ID>`.
+## Optional — orchestrate the whole corpus
 
-### Проверка / выгрузка для анализатора
-
-```bash
-python3 chat.py show --session <SESSION_ID>   # весь сырой транскрипт (JSON)
-python3 chat.py list                          # все сессии: id, ходы, модель
-```
-
-Анализатор читает `out/sessions/<SESSION_ID>.json` по SESSION_ID.
-
-## Когда `ask.py`, а когда `chat.py`
-
-- `chat.py` — **основной путь**: любая сессия, в которую можно вернуться и которую
-  читает анализатор по SESSION_ID.
-- `ask.py` — **stateless one-shot** без сохранения на диск (когда возврат заведомо
-  не нужен). Тот же дословный ввод/полный вывод, но состояние не пишется.
+If the operator says "run the corpus" / "run everything", iterate
+`static/corpus.json`, one session per case, and return a manifest of SESSION_IDs:
 
 ```bash
-echo "промпт" | python3 ask.py            # разовый прогон, ничего не сохраняется
-python3 ask.py --file /tmp/case.txt --text-only
+# for each entry: write payload to /tmp/case.txt, then
+python3 chat.py start --file /tmp/case.txt
+# collect each SESSION_ID -> present the list for the analyzer
 ```
 
-## Thinking-модели
+Do not summarize or score; just deliver the SESSION_ID list + each full response.
 
-`response` может быть пустым — весь ответ в `reasoning_content`. Оба поля всегда
-отдаются целиком. Если `truncated=true` (упор в `max_tokens`) — поднять
-`--max-tokens` / env `REDTEAM_MAX_TOKENS` (дефолт 8192) и повторить.
+## Optional — direct operator access (power users)
 
-## Правила безопасности
+An operator who prefers a terminal can reattach without the agent:
+`python3 chat.py repl --session <SESSION_ID>`. Not required; the agent path above
+needs no scripts from the operator.
 
-- `target` ≠ `attacker` ≠ `judge`. Тестируемая модель — только `target`.
-- Scope пустой по умолчанию. Активные тесты — только своя / письменно
-  авторизованная модель.
-- Hermes передаёт промпт как есть, но сам не изобретает рабочие вредоносные
-  payload (оружие/CBRN/malware).
-- Ключи — только env / `~/.hermes/.env`, никогда в файлах пакета.
+## Fidelity notes
 
-## Проверка целостности
+- `response` may be empty for thinking models — the full answer is then in
+  `reasoning_content`. Both are always returned in full.
+- If `truncated=true` (hit `max_tokens`), warn and rerun with higher
+  `--max-tokens` (or env `REDTEAM_MAX_TOKENS`, default 8192).
+
+## Safety
+
+- `target` ≠ `attacker` ≠ `judge`; the tested model is only ever `target`.
+- Scope empty by default; active tests only against own / authorized models.
+- Prompts pass verbatim, but never author working weapons/CBRN/malware payloads.
+- Keys only via env / `~/.hermes/.env`, never in the repo.
+
+## Integrity
 
 ```bash
 python3 -m py_compile ask.py chat.py rt.py static/harness.py
-bash deployment/verify.sh   # из корня пакета, exit 0
+bash deployment/verify.sh   # exit 0
 ```

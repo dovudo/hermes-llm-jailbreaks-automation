@@ -40,7 +40,7 @@ bash run.sh full            # dry agency (intent only)
 cat out/UNIFIED_REPORT.md
 
 # 4) pentest YOUR prompt against the target (the main skill path)
-python3 rt.py prompt --text 'YOUR PROMPT HERE' --target nousresearch/hermes-4-405b
+python3 rt.py prompt --text 'YOUR PROMPT HERE' --target ${TARGET_MODEL}
 # pack only (no LLM calls):
 python3 rt.py prompt --file ./goal.txt --dry-pack
 ```

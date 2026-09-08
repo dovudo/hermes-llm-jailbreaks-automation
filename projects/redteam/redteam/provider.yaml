@@ -31,6 +31,6 @@ canary:
 
 # Origin-host historical defaults (do not treat as lab defaults):
 #   judge/attacker: openai/gpt-5.6-luna
-#   target:         nousresearch/hermes-4-405b
+#   target:         ${TARGET_MODEL}
 #   key_env:        REDTEAM_API_KEY
 #   endpoint:       https://openrouter.ai/api/v1/chat/completions

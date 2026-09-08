@@ -51,6 +51,6 @@ invariants:
 
 # Origin-host examples (NOT defaults for the new server):
 #   attacker/judge: openai/gpt-5.6-luna via OpenRouter
-#   target:         nousresearch/hermes-4-405b
+#   target:         ${TARGET_MODEL}
 # Those names are historical. Prefer subscription models on the lab.
 allow_self_play: false

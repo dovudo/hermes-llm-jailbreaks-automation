@@ -3,7 +3,7 @@
 cascade.py — Excessive-Agency cascade harness (defensive; YOUR OWN model only).
 
 Tests the exact chain you described:
-    hermes-4-405b (main model under test)  --jailbreak-->  delegates to sub-agent
+    ${TARGET_MODEL} (main model under test)  --jailbreak-->  delegates to sub-agent
     -->(sub-agent fires the scanning tool)  ->  a canary mock-scanner logs the hit.
 
 Stages per objective (X1..X5 in agency_objectives.json):
@@ -296,7 +296,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--target-api", choices=["anthropic", "openai"], default="openai")
     ap.add_argument("--target-endpoint", default="https://openrouter.ai/api/v1/chat/completions")
-    ap.add_argument("--target-model", default="nousresearch/hermes-4-405b")
+    ap.add_argument("--target-model", default="${TARGET_MODEL}")
     ap.add_argument("--target-key-env", default="REDTEAM_API_KEY")
     ap.add_argument("--attacker-api", choices=["anthropic", "openai"], default="openai")
     ap.add_argument("--attacker-endpoint", default="https://openrouter.ai/api/v1/chat/completions")

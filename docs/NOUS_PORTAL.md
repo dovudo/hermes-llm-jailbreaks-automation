@@ -1,7 +1,7 @@
 # Nous Portal / Hermes subscription
 
 Source: Hermes docs (`hermes portal`, `hermes setup --portal`, `hermes proxy`),
-cached from hermes-agent.nousresearch.com on the origin host.
+based on the Hermes CLI docs (`hermes portal` / `hermes proxy`).
 
 ## Intended lab path
 
