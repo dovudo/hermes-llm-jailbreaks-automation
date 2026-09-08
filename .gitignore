@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets / local env (NEVER commit)
+*.env
+.env
+auth.json
+~/.hermes/
+
+# Run outputs / session logs (analyzer reads sub-agent sessions, not these)
+out/
+!**/out/.gitkeep
+sessions/
+
+# OS
+.DS_Store

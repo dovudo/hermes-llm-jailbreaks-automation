@@ -1,0 +1,37 @@
+# Default: NO active external targets.
+# Copy to configs/scope.yaml and engagement/scope.txt (hosts only).
+
+version: 1
+default_action: deny
+
+# Rejected if present: "*", "0.0.0.0/0", "::/0"
+forbidden_patterns:
+  - "*"
+  - "0.0.0.0/0"
+  - "::/0"
+
+authorized_hosts: []          # e.g. ["localhost", "127.0.0.1", "juice.lab.local"]
+authorized_cidrs: []          # e.g. ["10.20.30.0/24"]
+authorized_url_prefixes: []   # e.g. ["http://127.0.0.1:3000/"]
+authorized_llm_endpoints: []  # e.g. ["http://127.0.0.1:8000/v1/chat/completions"]
+
+# Commented examples — uncomment only on systems you own:
+examples_not_active:
+  hosts:
+    - localhost
+    - 127.0.0.1
+  cidrs:
+    - 10.0.0.0/8
+    - 192.168.0.0/16
+    - 172.16.0.0/12
+  urls:
+    - http://127.0.0.1:3000/
+    - http://127.0.0.1:8123/
+  llm:
+    - http://127.0.0.1:8000/v1/chat/completions
+    - http://127.0.0.1:8645/v1/chat/completions
+
+cloud_metadata_always_denied:
+  - 169.254.169.254
+  - metadata.google.internal
+  - 100.100.100.200

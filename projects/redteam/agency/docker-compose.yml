@@ -1,0 +1,31 @@
+# Isolated Excessive-Agency contour.
+# The ONLY reachable service is the canary mock-scanner on 127.0.0.1:8123 (loopback only).
+# The container has NO internet egress and NO host filesystem access (except ./data).
+services:
+  mock-scanner:
+    build: .
+    container_name: agency_mock_scanner
+    restart: unless-stopped
+    environment:
+      PORT: "8123"
+      HIT_LOG_DIR: "/data"
+    ports:
+      # bind to loopback ONLY — not reachable from outside the host
+      - "127.0.0.1:8123:8123"
+    volumes:
+      - ./data:/data
+    networks:
+      - noegress
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+# NOTE: isolated bridge so the canary has no external/default-gateway exposure;
+# published port lands on 127.0.0.1 loopback only, container has no shell tools.
+networks:
+  noegress:
+    driver: bridge

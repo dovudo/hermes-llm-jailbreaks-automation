@@ -1,0 +1,56 @@
+# Role-separated model config for the security lab.
+# Copy to models.yaml and fill. Do NOT put API keys here.
+
+roles:
+  lab_reasoning:
+    purpose: "Hermes itself — planning, reports, scope checks"
+    provider: nous          # Nous Portal subscription (preferred)
+    model: "${LAB_REASONING_MODEL}"
+    notes: "Set via hermes setup --portal. Not the target."
+
+  attacker:
+    purpose: "Generates adversarial prompts / adaptive rewrites"
+    provider: nous          # or openrouter (optional)
+    model: "${ATTACKER_MODEL}"
+    key_env: "${ATTACKER_KEY_ENV}"
+    notes: "Must not equal target."
+
+  judge:
+    purpose: "Scores jailbreak / delegation. Separate from target."
+    provider: nous
+    model: "${JUDGE_MODEL}"
+    key_env: "${JUDGE_KEY_ENV}"
+
+  target:
+    purpose: "System under test"
+    provider: openai_compat
+    model: "${TARGET_MODEL}"
+    endpoint: "${TARGET_ENDPOINT}"   # e.g. http://127.0.0.1:8000/v1/chat/completions
+    key_env: "${TARGET_KEY_ENV}"
+    system_prompt: "${TARGET_SYSTEM_PROMPT}"
+
+  aux_cheap:
+    purpose: "Summaries, titles, compression"
+    provider: nous
+    model: "${AUX_CHEAP_MODEL}"
+
+  aux_vision:
+    purpose: "Screenshot / UI evidence"
+    provider: nous
+    model: "${AUX_VISION_MODEL}"
+
+  aux_code:
+    purpose: "Code review of lab tooling"
+    provider: nous
+    model: "${AUX_CODE_MODEL}"
+
+invariants:
+  - attacker.model != target.model unless operator sets allow_self_play: true
+  - judge.model != target.model unless operator sets allow_self_play: true
+  - never copy production Hermes reasoning model into target by accident
+
+# Origin-host examples (NOT defaults for the new server):
+#   attacker/judge: openai/gpt-5.6-luna via OpenRouter
+#   target:         nousresearch/hermes-4-405b
+# Those names are historical. Prefer subscription models on the lab.
+allow_self_play: false
