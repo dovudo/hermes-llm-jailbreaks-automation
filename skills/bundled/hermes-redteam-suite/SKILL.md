@@ -85,6 +85,30 @@ python3 chat.py start --file /tmp/case.txt
 
 Do not summarize or score; just deliver the SESSION_ID list + each full response.
 
+## Optional — adaptive attacker & mutation engine (creative / high-volume)
+
+For deeper load-testing beyond the static corpus:
+
+- **Adaptive attacker** — a SEPARATE attacker model creatively composes/mutates
+  techniques against the target across turns, adapting when refused:
+  ```bash
+  python3 adaptive/adaptive_attack.py --target-api openai --target-endpoint <ep> \
+    --target-model <your-model> --attacker-model <SEPARATE uncensored model> \
+    --objectives adaptive/objectives.json --out out/adaptive_report.json
+  ```
+  The attacker's arsenal auto-loads from the live corpus. `target ≠ attacker` — and
+  strongly-aligned attacker models often REFUSE to generate attacks even for
+  authorized testing, so pick a less-restricted model for that role and tell the
+  operator if it is refusing.
+- **Mutation engine** — deterministic, no refusal risk, unlimited abstract volume:
+  ```bash
+  python3 mutators.py --out /tmp/load.json --objectives adaptive/objectives.json
+  ```
+  Then run each generated case via chat.py and collect SESSION_IDs.
+
+Corpus is 272 abstract cases; see research/jailbreaks/TECHNIQUES_CATALOG.md and
+DISCOVERY_METHODOLOGY.md.
+
 ## Optional — direct operator access (power users)
 
 An operator who prefers a terminal can reattach without the agent:

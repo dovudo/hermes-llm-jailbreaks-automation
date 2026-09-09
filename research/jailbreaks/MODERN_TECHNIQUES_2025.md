@@ -1,5 +1,7 @@
 # Modern jailbreak / injection techniques (2024–2026)
 
+> Superseded/expanded by the deep-dive [`TECHNIQUES_CATALOG.md`](TECHNIQUES_CATALOG.md) and [`DISCOVERY_METHODOLOGY.md`](DISCOVERY_METHODOLOGY.md). Kept for provenance of the first 29-case batch.
+
 Survey feeding the abstract test cases added to `projects/redteam/static/corpus.json`
 (ids `NM*`, `CR1`, `SK1`, `PP*`, `DD1`, `BLJ1`, `SM*`, `ART1`, `OB*`, `TB1`, `BON1`,
 `RS1`, `IW1`, `EC1`, `CO1`, `AG*`, `MCP*`, `MP1`, `LK*`). All corpus payloads are

@@ -85,15 +85,33 @@ See [`RUNBOOK.md`](RUNBOOK.md).
 
 ## The attack corpus
 
-`projects/redteam/static/corpus.json` — **54 abstract test cases** spanning
-classic and current (2024–2026) techniques: many-shot, crescendo, skeleton key,
-policy puppetry, deceptive delight, Bad-Likert-judge, unicode-tag / ASCII-art
-smuggling, encoding / flip / tokenizer-break / best-of-N obfuscation, refusal
-suppression, immersive-world roleplay, echo chamber, context overflow, indirect
-prompt injection (tool/RAG), confused-deputy exfil, MCP tool poisoning /
-rug-pull / line-jumping, memory poisoning, and system-prompt leakage.
+`projects/redteam/static/corpus.json` — **272 abstract test cases** distilled from
+a six-approach survey (academic papers, vendor/lab disclosures, community/in-the-wild
+patterns, agentic/MCP research, multimodal+encoding vectors, and framework
+taxonomies). Coverage spans: encoding/obfuscation (base64, cipher, ASCII-art,
+flip, tokenizer-break, unicode-tag, low-resource language), framing/persona/
+multi-turn (many-shot, crescendo, skeleton key, policy puppetry, deceptive
+delight, Bad-Likert-judge, echo chamber, immersive world, context compliance),
+automated/optimization (GCG, PAIR, TAP, best-of-N, refusal ablation), multimodal
+(image/typographic/steganographic/audio/QR/document injection), agentic
+(indirect injection, RAG poisoning, confused-deputy exfil, EchoLeak-class,
+MCP tool poisoning/rug-pull/line-jumping, memory poisoning, multi-agent worms),
+extraction/leakage, and whole framework-coverage categories (OWASP LLM/Agentic,
+MITRE ATLAS, NIST AI 100-2, Llama Guard S1–S14).
 
-Techniques and dated sources: [`research/jailbreaks/MODERN_TECHNIQUES_2025.md`](research/jailbreaks/MODERN_TECHNIQUES_2025.md).
+- Technique → source map: [`research/jailbreaks/TECHNIQUES_CATALOG.md`](research/jailbreaks/TECHNIQUES_CATALOG.md)
+- How to find new vulnerabilities: [`research/jailbreaks/DISCOVERY_METHODOLOGY.md`](research/jailbreaks/DISCOVERY_METHODOLOGY.md)
+
+### Adaptive attacker & load testing
+
+- **Adaptive attacker** (`projects/redteam/adaptive/adaptive_attack.py`): a separate
+  ATTACKER model creatively composes/mutates techniques against the TARGET across
+  turns, adapting when refused (its arsenal auto-loads from the live corpus). Use a
+  *separate, less-restricted* model for the attacker role — strongly-aligned models
+  often refuse to generate attacks even for authorized testing. `target ≠ attacker`.
+- **Mutation engine** (`projects/redteam/mutators.py`): deterministically composes
+  technique primitives (transform × wrapper) into unlimited abstract load-test cases
+  — no attacker-model refusal risk. `python3 mutators.py --out load.json`.
 
 ## Repo layout
 
@@ -101,7 +119,9 @@ Techniques and dated sources: [`research/jailbreaks/MODERN_TECHNIQUES_2025.md`](
 |---|---|
 | `projects/redteam/ask.py` | Stateless one-shot: prompt → full raw response |
 | `projects/redteam/chat.py` | Resumable sessions (`start` / `say` / `repl` / `show` / `list`) |
-| `projects/redteam/static/corpus.json` | 54 abstract attack test cases |
+| `projects/redteam/adaptive/adaptive_attack.py` | Adaptive attacker-LLM loop (creative, corpus-aware) |
+| `projects/redteam/mutators.py` | Mutation engine: combinatorial abstract load-test cases |
+| `projects/redteam/static/corpus.json` | 272 abstract attack test cases |
 | `projects/redteam/redteam/provider.yaml` | Target / roles config (env-driven, no secrets) |
 | `skills/bundled/hermes-redteam-suite/` | Agent skill that orchestrates the above |
 | `research/jailbreaks/` | Technique taxonomy, sources, evaluation notes |
